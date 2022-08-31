@@ -1,4 +1,4 @@
-FROM golang:alpine
+FROM golang:1.10.3-alpine3.7
 
 RUN \
   apk add --update git make gcc musl-dev linux-headers  
@@ -58,8 +58,8 @@ RUN apk add --no-cache --virtual .build-deps-yarn curl gnupg tar \
     gpg --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
     gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
   done \
-  && curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
-  && curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
+  && curl -kfSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
+  && curl -kfSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz \
   && mkdir -p /opt \
   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/ \
@@ -81,18 +81,25 @@ ADD go-ethereum-cf go-ethereum
 ADD Ethereum Ethereum
 
 ADD examples examples
+#including deployer
+ADD contract_deployer contract_deployer
 ADD contract_fuzzer contract_fuzzer
 ADD contract_tester contract_tester
 
 ADD fuzzer_run.sh fuzzer_run.sh
 ADD tester_run.sh tester_run.sh
 ADD geth_run.sh  geth_run.sh
+#including deployer
+ADD deployer_run.sh deployer_run.sh
 ADD run.sh  run.sh
+
 RUN \
   (cd go-ethereum && make geth)                                && \
+  (cd go-ethereum && source ./build/env.sh go run build/ci.go install ./cmd/evm)                               &&\
   (cd contract_fuzzer && source ./gopath.sh && cd ./src/ContractFuzzer/contractfuzzer && go build -o contract_fuzzer) && \ 
   cp contract_fuzzer/src/ContractFuzzer/contractfuzzer/contract_fuzzer /usr/local/bin   && \
   cp go-ethereum/build/bin/geth /usr/local/bin/                && \
+  cp go-ethereum/build/bin/evm /usr/local/bin/                  && \
   apk del git  make gcc musl-dev linux-headers                 && \
   rm -rf ./go-ethereum && rm -rf ./contract_fuzzer                 && \ 
   rm -rf /var/cache/apk/*                   

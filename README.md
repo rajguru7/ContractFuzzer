@@ -1,3 +1,6 @@
+# Adding my comments
+Not adding .ethash folder to upstream git. File size is big. It is required to be included in container so that ContractFuzzer can start the mining quicky instead of generating DAGs for long time. Transactions get timed out otherwise.
+
 # ContractFuzzer
 
 The Ethereum Smart Contract Fuzzer for Security Vulnerability Detection
